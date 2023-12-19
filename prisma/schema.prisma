@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  username       String    @unique
+  email          String    @unique
+  passwordHash   String
+  profilePicture String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  bio            String?
+  preferences    Json?
+
+  sentMessages   Message[] @relation("UserSentMessages")
+  receivedMessages Message[] @relation("UserReceivedMessages")
+  topics         Topic[]
+  comments       Comment[]
+  friends        Friends[] @relation("UserFriends")
+  friendOf       Friends[] @relation("FriendOf")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  fromUser   User     @relation(name: "UserSentMessages", fields: [fromUserId], references: [id])
+  toUser     User     @relation(name: "UserReceivedMessages", fields: [toUserId], references: [id])
+  messageText String
+  timestamp  DateTime @default(now())
+  isRead     Boolean  @default(false)
+
+  fromUserId Int
+  toUserId   Int
+}
+
+model Topic {
+  id              Int       @id @default(autoincrement())
+  createdBy       User      @relation(fields: [createdByUserId], references: [id])
+  title           String
+  description     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  comments        Comment[]
+
+  createdByUserId Int
+}
+
+model Comment {
+  id             Int      @id @default(autoincrement())
+  topic          Topic    @relation(fields: [topicId], references: [id])
+  postedBy       User     @relation(fields: [postedByUserId], references: [id])
+  commentText    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  topicId        Int
+  postedByUserId Int
+}
+
+model Friends {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(name: "UserFriends", fields: [userId1], references: [id])
+  friend       User     @relation(name: "FriendOf", fields: [userId2], references: [id])
+  status       String
+  createdAt    DateTime @default(now())
+
+  userId1      Int
+  userId2      Int
+
+  @@unique([userId1, userId2])
+}
